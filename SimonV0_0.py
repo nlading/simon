@@ -17,6 +17,7 @@ options = ['right','left','up','down']
 run_game = True
 solution = []
 
+
 def prompt_start():
 	current_high_score()
 	start = input("Play Simon Says? [Y/N]>> ")
@@ -24,7 +25,8 @@ def prompt_start():
 		play_game()
 	else:
 		close()
-	
+
+
 def play_game():
 	userin = None
 	add_action()
@@ -44,7 +46,8 @@ def play_game():
 	print("Score: %i" % len(solution))
 	sleep(1)
 	play_game()
-	
+
+
 def play_solution():
 	for action in solution:
 		start = time()
@@ -57,17 +60,20 @@ def play_solution():
 				curr = time()
 				print('-', end='')			
 		print('\n'*50)
-	
+
+
 def add_action():
 	global solution
 	index = randint(0, len(options)-1)
 	solution.append(options[index])
-	
+
+
 def restart():
 	global solution
 	solution[:] = []
 	prompt_start()
-	
+
+
 def check_high_score():
 	global high_score
 	if len(solution) > len(high_score):
@@ -77,11 +83,14 @@ def check_high_score():
 		data = ','.join(solution)
 		openfile.write(data)
 		openfile.close()
-		
+
+
 def current_high_score():
 	print("\nCurrent High Score: {0}\n".format(len(high_score)))
-	
+
+
 def close():
 	print("Goodbye!")
-	
+
+
 prompt_start()
