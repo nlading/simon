@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import *
+import pygame.midi
 from random import randint
 from time import sleep, time
 
@@ -21,7 +21,8 @@ light_yellow = (255, 255, 0)
 light_blue = (102, 102, 255)
 light_green = (153, 255, 51)
 
-grey = (128, 128, 128)
+dark_grey = (128, 128, 128)
+light_grey = (230, 230, 230)
 
 # Determine size of the screen to define height and width
 min_width = 660
@@ -57,7 +58,19 @@ largeText = pygame.font.Font("freesansbold.ttf",100)
 title = largeText.render('SIMON', True, black)
 new_game_text = smallText.render('NEW GAME', True, black)
 score_label = smallText.render('SCORE:', True, black)
-score_display = smallText.render('5', True, black)
+score_display = smallText.render('0', True, black)
+
+# Audio Objects
+pygame.midi.init()
+player = pygame.midi.Output(0)
+player.set_instrument(0)
+notes_on = {}
+tone_length = 2
+
+red_note = 55
+yellow_note = 60
+blue_note = 65
+green_note = 70
 
 
 def draw_grid():
@@ -81,21 +94,31 @@ def handle_click(event):
 	pygame.draw.circle(screen, black, [x, y], 20, 5)
 	# Check for new game button press
 	if height_unit*9 < y < height_unit*11 and width_unit*5 < x < width_unit*10:
-		print('New Game Pressed')
+		pygame.draw.rect(screen, light_grey, rectng)
+		screen.blit(new_game_text, (width_unit * 5.5, height_unit * 9.75))
 	# Check for color button presses
 	if height_unit*5 < y < height_unit*8:
 		if width_unit*2 < x < width_unit*5:
-			print("Red button press")
+			player.note_on(red_note, 100)
+			notes_on[red_note] = 1
+			pygame.draw.rect(screen, light_red, rect1)
 		elif width_unit*7 < x < width_unit*10:
-			print("Yellow button press")
+			player.note_on(yellow_note, 100)
+			notes_on[yellow_note] = 1
+			pygame.draw.rect(screen, light_yellow, rect2)
 		elif width_unit*12 < x < width_unit*15:
-			print("Blue button press")
+			player.note_on(blue_note, 100)
+			notes_on[blue_note] = 1
+			pygame.draw.rect(screen, light_blue, rect3)
 		elif width_unit*17 < x < width_unit*20:
-			print("Green button press")
+			player.note_on(green_note, 100)
+			notes_on[green_note] = 1
+			pygame.draw.rect(screen, light_green, rect4)
 	pygame.display.flip()
 
 
 def main():
+	global notes_on
 	winExit = False
 	clock = pygame.time.Clock()
 
@@ -105,14 +128,14 @@ def main():
 
 	while not winExit:
 		# Limits while loop to a max of 10 times per second
-		clock.tick(10)
+		clock.tick(5)
 
 		screen.fill(white)
 		pygame.draw.rect(screen, dark_red, rect1)
 		pygame.draw.rect(screen, dark_yellow, rect2)
 		pygame.draw.rect(screen, dark_blue, rect3)
 		pygame.draw.rect(screen, dark_green, rect4)
-		pygame.draw.rect(screen, grey, rectng)
+		pygame.draw.rect(screen, dark_grey, rectng)
 		screen.blit(title, (width_unit * 5, height_unit * 1))
 		screen.blit(new_game_text, (width_unit * 5.5, height_unit * 9.75))
 		screen.blit(score_label, (width_unit * 12, height_unit * 9.75))
@@ -124,8 +147,20 @@ def main():
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				handle_click(event)
 
+		turned_off = []
+		for note, val in notes_on.items():
+			if val >= tone_length:
+				player.note_off(note)
+				turned_off.append(note)
+			else:
+				notes_on[note] += 1
+		for note in turned_off:
+			del notes_on[note]
+
 		# draw_grid()
 		pygame.display.update()
 
 
 main()
+del player
+pygame.midi.quit()
