@@ -1,4 +1,4 @@
-# Simon V1 - Text-based
+# Simon V0 - Text-based
 from random import randint
 from time import sleep, time
 
@@ -11,14 +11,17 @@ except FileNotFoundError:
 	high_score = []
 	f = open(HighScoreFileName, 'w')
 	f.close()
-	
-options = ['right','left','up','down']
 
-run_game = True
+options = ['right', 'left', 'up', 'down']
+
 solution = []
 
 
 def prompt_start():
+	"""
+	Prompts the user to start a new game. If 'Y', a new game starts. Game ends with any other input.
+	:return: None
+	"""
 	current_high_score()
 	start = input("Play Simon Says? [Y/N]>> ")
 	if start.lower() in 'yes':
@@ -28,6 +31,10 @@ def prompt_start():
 
 
 def play_game():
+	"""
+	The main game engine. Performs all game functions and processes user input.
+	:return: None
+	"""
 	userin = None
 	add_action()
 	play_solution()
@@ -49,6 +56,11 @@ def play_game():
 
 
 def play_solution():
+	"""
+	Displays the sequence of button presses the user must repeat. One instruction is shown at a time, and remains
+	presented for 1 second. The command then hides itself by printing multiple new lines.
+	:return: None
+	"""
 	for action in solution:
 		start = time()
 		end = start + 1
@@ -58,23 +70,35 @@ def play_solution():
 		while time() <= end:
 			if time() - curr >= 0.1:
 				curr = time()
-				print('-', end='')			
-		print('\n'*50)
+				print('-', end='')
+		print('\n' * 50)
 
 
 def add_action():
+	"""
+	Appends the solution by one action. Solution is global because there is no security risk
+	:return: None
+	"""
 	global solution
-	index = randint(0, len(options)-1)
+	index = randint(0, len(options) - 1)
 	solution.append(options[index])
 
 
 def restart():
+	"""
+	Clears the solution list, issues user prompt.
+	:return:
+	"""
 	global solution
 	solution[:] = []
 	prompt_start()
 
 
 def check_high_score():
+	"""
+	Checks to see if current score is the new high score. If so, overwrites existing score document.
+	:return:
+	"""
 	global high_score
 	if len(solution) > len(high_score):
 		print("New High Score!!")
