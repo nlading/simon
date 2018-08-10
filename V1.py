@@ -1,4 +1,5 @@
 import pygame
+from pygame.locals import *
 from random import randint
 from time import sleep, time
 
@@ -58,33 +59,73 @@ new_game_text = smallText.render('NEW GAME', True, black)
 score_label = smallText.render('SCORE:', True, black)
 score_display = smallText.render('5', True, black)
 
+
 def draw_grid():
+	"""
+	Draws a uniform grid across the entire screen
+	:return: None
+	"""
 	for i in range(int(win_width / width_unit)):
 		pygame.draw.line(screen, black, (i*width_unit,0), (i*width_unit,win_height))
 	for i in range(int(win_height / height_unit)):
 		pygame.draw.line(screen, black, (0,i*height_unit), (win_width,i*height_unit))
 
 
+def handle_click(event):
+	"""
+	Determines which button is pressed
+	:param event: The pygame event containing the coordinates of the user's click
+	:return: None
+	"""
+	x, y = event.dict.get('pos')
+	pygame.draw.circle(screen, black, [x, y], 20, 5)
+	# Check for new game button press
+	if height_unit*9 < y < height_unit*11 and width_unit*5 < x < width_unit*10:
+		print('New Game Pressed')
+	# Check for color button presses
+	if height_unit*5 < y < height_unit*8:
+		if width_unit*2 < x < width_unit*5:
+			print("Red button press")
+		elif width_unit*7 < x < width_unit*10:
+			print("Yellow button press")
+		elif width_unit*12 < x < width_unit*15:
+			print("Blue button press")
+		elif width_unit*17 < x < width_unit*20:
+			print("Green button press")
+	pygame.display.flip()
+
+
 def main():
 	winExit = False
+	clock = pygame.time.Clock()
 
-	screen.fill(white)
-	pygame.draw.rect(screen, dark_red, rect1)
-	pygame.draw.rect(screen, dark_yellow, rect2)
-	pygame.draw.rect(screen, dark_blue, rect3)
-	pygame.draw.rect(screen, dark_green, rect4)
-	pygame.draw.rect(screen, grey, rectng)
-	screen.blit(title, (width_unit*5, height_unit*1))
-	screen.blit(new_game_text, (width_unit*5.5, height_unit*9.75))
-	screen.blit(score_label, (width_unit*12, height_unit*9.75))
-	screen.blit(score_display, (width_unit*15, height_unit*9.75))
-	# draw_grid()
-	pygame.display.update()
+	# Define allowed interactions - Allows only mouse down actions, and closing the window
+	pygame.event.set_allowed(None)
+	pygame.event.set_allowed([pygame.MOUSEBUTTONDOWN, pygame.QUIT])
 
 	while not winExit:
+		# Limits while loop to a max of 10 times per second
+		clock.tick(10)
+
+		screen.fill(white)
+		pygame.draw.rect(screen, dark_red, rect1)
+		pygame.draw.rect(screen, dark_yellow, rect2)
+		pygame.draw.rect(screen, dark_blue, rect3)
+		pygame.draw.rect(screen, dark_green, rect4)
+		pygame.draw.rect(screen, grey, rectng)
+		screen.blit(title, (width_unit * 5, height_unit * 1))
+		screen.blit(new_game_text, (width_unit * 5.5, height_unit * 9.75))
+		screen.blit(score_label, (width_unit * 12, height_unit * 9.75))
+		screen.blit(score_display, (width_unit * 15, height_unit * 9.75))
+
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				winExit = True
+			if event.type == pygame.MOUSEBUTTONDOWN:
+				handle_click(event)
+
+		# draw_grid()
+		pygame.display.update()
 
 
 main()
