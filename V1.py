@@ -18,15 +18,6 @@ except FileNotFoundError:
 solution = []
 user_solution = []
 display_history = []
-states = [
-	'INIT',
-	'IDLE',
-	'PROCESSING',
-	'PRESENTING',
-	'PLAYER INPUT'
-]
-current_state = 'INIT'
-
 
 # Initialize all needed pygame modules
 pygame.init()
@@ -144,6 +135,12 @@ class RectButton:
 	def set_text(self, text):
 		self.text = text
 
+	def get_text(self):
+		return self.text
+
+	def get_state(self):
+		return self.state
+
 	def extinguish(self):
 		pygame.draw.rect(self.surface, self.off_color, self.location)
 		self.center_text()
@@ -179,7 +176,7 @@ class RectButton:
 		self.center_text()
 
 
-on_limit = 4
+on_limit = 3
 RedButton = RectButton(screen, rect1, light_red, dark_red, red_note, on_limit=on_limit, player_obj=player)
 YellowButton = RectButton(screen, rect2, light_yellow, dark_yellow, yellow_note, on_limit=on_limit, player_obj=player)
 BlueButton = RectButton(screen, rect3, light_blue, dark_blue, blue_note, on_limit=on_limit, player_obj=player)
@@ -188,24 +185,20 @@ NewGameButton = RectButton(screen, rectng, light_grey, dark_grey, on_limit=on_li
 
 game_buttons = [RedButton, YellowButton, BlueButton, GreenButton, NewGameButton]
 
+
 # ---------------------------------------------------------------------------------------
 # Game Methods
 # ---------------------------------------------------------------------------------------
-# def processing():
-# 	global solution
-# 	index = randint(0, len(buttons)-1)
-# 	solution.append(game_buttons.get(buttons[index]))
-#
-#
-# def present():
-# 	global display_history, solution
-# 	curr = solution.pop([0])
-# 	ignite(curr)
-# 	display_history.append(curr)
-#
-#
-# def check_solution():
-# 	pass
+def reset():
+	global score_display
+	for button in game_buttons:
+		button.set_to_base()
+	score_display = smallText.render('0', True, black)
+
+
+def increment_score():
+	global score_display
+	score_display = smallText.render(str(len(solution)), True, black)
 
 
 # ---------------------------------------------------------------------------------------
@@ -220,6 +213,14 @@ def draw_grid():
 		pygame.draw.line(screen, black, (i*width_unit, 0), (i*width_unit, win_height))
 	for i in range(int(win_height / height_unit)):
 		pygame.draw.line(screen, black, (0, i*height_unit), (win_width, i*height_unit))
+
+
+def handle_click(event):
+	for button in game_buttons:
+		button.check_clicked(event)
+		if button.get_text() == 'NEW GAME':
+			reset()
+	pygame.display.flip()
 
 
 def refresh_gui():
@@ -244,8 +245,6 @@ def main():
 	pygame.event.set_allowed(None)
 	pygame.event.set_allowed([pygame.MOUSEBUTTONDOWN, pygame.QUIT])
 
-	current_state = 'IDLE'
-
 	while not winExit:
 		# Limits while loop to a max of 10 times per second
 		clock.tick(10)
@@ -256,11 +255,7 @@ def main():
 			if event.type == pygame.QUIT:
 				winExit = True
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				for button in game_buttons:
-					button.check_clicked(event)
-				pygame.display.flip()
-
-		# silence_tones()
+				handle_click(event)
 
 		# draw_grid()
 		pygame.display.update()
