@@ -81,7 +81,6 @@ largeText = pygame.font.Font("freesansbold.ttf", 100)
 
 # Text objects
 title = largeText.render('SIMON', True, black)
-new_game_text = smallText.render('NEW GAME', True, black)
 score_label = smallText.render('SCORE:', True, black)
 score_display = smallText.render('0', True, black)
 
@@ -96,10 +95,6 @@ red_note = 55
 yellow_note = 60
 blue_note = 65
 green_note = 70
-
-class Window:
-	def __init__(self):
-		pass
 
 
 class RectButton:
@@ -145,6 +140,9 @@ class RectButton:
 		x_pos = self.location.centerx - int(text_w / 2)
 		y_pos = self.location.centery - int(text_h / 2)
 		self.surface.blit(text_obj, (x_pos, y_pos))
+
+	def set_text(self, text):
+		self.text = text
 
 	def extinguish(self):
 		pygame.draw.rect(self.surface, self.off_color, self.location)
@@ -219,67 +217,9 @@ def draw_grid():
 	:return: None
 	"""
 	for i in range(int(win_width / width_unit)):
-		pygame.draw.line(screen, black, (i*width_unit,0), (i*width_unit,win_height))
+		pygame.draw.line(screen, black, (i*width_unit, 0), (i*width_unit, win_height))
 	for i in range(int(win_height / height_unit)):
-		pygame.draw.line(screen, black, (0,i*height_unit), (win_width,i*height_unit))
-
-
-def handle_click(event):
-	"""
-	Determines which button is pressed
-	:param event: The pygame event containing the coordinates of the user's click
-	:return: None
-	"""
-	global current_state
-	for button in game_buttons:
-		button.check_clicked(event)
-	x, y = event.dict.get('pos')
-	# Check for new game button press
-	# if height_unit*9 < y < height_unit*11 and width_unit*5 < x < width_unit*10:
-	# 	pygame.draw.rect(screen, light_grey, rectng)
-	# 	screen.blit(new_game_text, (width_unit * 5.5, height_unit * 9.75))
-	# 	current_state = 'PROCESS'
-	# # Check for color button presses
-	# if height_unit*5 < y < height_unit*8:
-	# 	if width_unit*2 < x < width_unit*5:
-	# 		ignite(game_buttons.get('red'))
-	# 	elif width_unit*7 < x < width_unit*10:
-	# 		ignite(game_buttons.get('yellow'))
-	# 	elif width_unit*12 < x < width_unit*15:
-	# 		ignite(game_buttons.get('blue'))
-	# 	elif width_unit*17 < x < width_unit*20:
-	# 		ignite(game_buttons.get('green'))
-	pygame.display.flip()
-
-
-def ignite(button_name):
-	player.note_on(button_name.get('tone'), 100)
-	notes_on[button_name.get('tone')] = 1
-	pygame.draw.rect(screen, button_name.get('on_color'), button_name.get('location'))
-
-
-def extinguish(button_name):
-	player.note_on(button_name.get('tone'), 100)
-	notes_on[button_name.get('tone')] = 1
-	pygame.draw.rect(screen, button_name.get('on_color'), button_name.get('location'))
-
-
-def silence_tones():
-	global game_buttons
-	# Turn off all tones after being played for 3 refresh cycles
-	for button, attributes in game_buttons.items():
-		if attributes.get('on_timer') >= 2:
-			pass
-
-	# turned_off = []
-	# for note, val in notes_on.items():
-	# 	if val >= tone_length:
-	# 		player.note_off(note)
-	# 		turned_off.append(note)
-	# 	else:
-	# 		notes_on[note] += 1
-	# for note in turned_off:
-	# 	del notes_on[note]
+		pygame.draw.line(screen, black, (0, i*height_unit), (win_width, i*height_unit))
 
 
 def refresh_gui():
@@ -316,7 +256,9 @@ def main():
 			if event.type == pygame.QUIT:
 				winExit = True
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				handle_click(event)
+				for button in game_buttons:
+					button.check_clicked(event)
+				pygame.display.flip()
 
 		# silence_tones()
 
