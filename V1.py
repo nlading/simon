@@ -1,7 +1,8 @@
 import pygame
 import pygame.midi
+from queue import Queue
 from random import randint
-from time import sleep, time
+from time import sleep
 
 # Backend pre-initialization
 HighScoreFileName = "score.txt"
@@ -14,10 +15,6 @@ except FileNotFoundError:
 	f = open(HighScoreFileName, 'w')
 	f.write('0')
 	f.close()
-
-solution = []
-user_solution = []
-display_history = []
 
 # Initialize all needed pygame modules
 pygame.init()
@@ -98,10 +95,14 @@ class GameLogic:
 		self.solution = []
 		self.user_answer = []
 		self.display_history = []
+		self.user_input_q = Queue()
 		self.current_display = None
 		self.display_timer = 0
 		self.display_timer_length = timer_length
 		self.score = 0
+		self.current_state = self.idle
+
+	def new_game(self):
 		self.current_state = self.init
 
 	def update(self):
@@ -113,35 +114,58 @@ class GameLogic:
 		self.display_history = []
 		self.score = 0
 		self.add_solution()
-		self.current_state = self.display_solution
 
 	def idle(self):
 		pass
 
-	def comp_turn(self):
-		self.display_solution()
-
 	def player_turn(self):
-		print('Waiting!')
+		if not self.user_input_q.empty():
+			check = self.user_input_q.get()
+			if check == self.solution[len(self.display_history)]:
+				self.display_history.append(check)
+			else:
+				self.game_over()
+			if len(self.display_history) == len(self.solution):
+				self.display_timer = 0
+				self.display_history = []
+				self.current_state = self.round_over
+
+	def round_over(self):
+		round_pause = 8
+		if self.display_timer >= round_pause:
+			self.display_timer = 0
+			self.current_state = self.add_solution
+		else:
+			self.display_timer += 1
+
+	def user_input(self, obj):
+		self.user_input_q.put(obj)
 
 	def add_solution(self):
 		index = randint(0, len(self.options)-1)
 		self.solution.append(self.options[index])
+		self.current_state = self.display_solution
 
 	def display_solution(self):
 		if not self.current_display:
 			current = len(self.display_history)
 			self.solution[current].ignite()
+			self.display_history.append(self.solution[current])
 			self.current_display = self.solution[current]
 		elif self.display_timer > self.display_timer_length:
 			if not self.current_display.get_state():
-				self.current_display = None
 				self.display_timer = 0
-				self.current_state = self.player_turn
-				self.solution = self.display_history.copy()
-				self.display_history = []
+				self.current_display = None
 		else:
 			self.display_timer += 1
+		if self.solution and len(self.solution) == len(self.display_history):
+			self.display_timer = 0
+			self.current_state = self.player_turn
+			self.display_history = []
+
+	def game_over(self):
+		print("Game Over!")
+		self.current_state = self.idle
 
 
 class RectButton:
@@ -218,6 +242,8 @@ class RectButton:
 		if self.location.left < xclick < self.location.right and \
 			self.location.top < yclick < self.location.bottom:
 			self.ignite()
+			return True
+		return False
 
 	def update(self):
 		if self.on_timer >= self.on_limit:
@@ -239,7 +265,8 @@ GreenButton = RectButton(screen, rect4, light_green, dark_green, green_note, on_
 NewGameButton = RectButton(screen, rectng, light_grey, dark_grey, on_limit=on_limit, text='NEW GAME')
 
 game_buttons = [RedButton, YellowButton, BlueButton, GreenButton, NewGameButton]
-current_game = None
+current_game = GameLogic(game_buttons[:-1], on_limit+5)
+
 
 # ---------------------------------------------------------------------------------------
 # Game Methods
@@ -249,24 +276,7 @@ def reset():
 	for button in game_buttons:
 		button.set_to_base()
 	score_display = smallText.render('0', True, black)
-	current_game = GameLogic(game_buttons[:-1], on_limit+300)
-
-
-def increment_score():
-	global score_display
-	score_display = smallText.render(str(len(solution)), True, black)
-
-
-def show_solution():
-	global solution, display_history
-	try:
-		next_item = solution.pop(0)
-		display_history.append(next_item)
-		game_buttons[next_item].ignite()
-	except IndexError:
-		return True
-	else:
-		return False
+	current_game.new_game()
 
 
 # ---------------------------------------------------------------------------------------
@@ -285,9 +295,10 @@ def draw_grid():
 
 def handle_click(event):
 	for button in game_buttons:
-		button.check_clicked(event)
-		if button.get_text() == 'NEW GAME':
+		if button.check_clicked(event) and button.get_text() == 'NEW GAME':
 			reset()
+		elif button.check_clicked(event):
+			current_game.user_input(button)
 	pygame.display.flip()
 
 
