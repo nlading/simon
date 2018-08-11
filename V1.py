@@ -56,6 +56,10 @@ if win_height < min_height or win_width < min_height:
 width_unit = int(win_width / 22)
 height_unit = int(win_height / 13)
 
+# Timing variables
+clock_ticks = 10
+on_limit = int(clock_ticks/3)
+
 # Instantiate the window
 screen = pygame.display.set_mode((win_width, win_height))
 pygame.display.set_caption('Simon')
@@ -86,6 +90,58 @@ red_note = 55
 yellow_note = 60
 blue_note = 65
 green_note = 70
+
+
+class GameLogic:
+	def __init__(self, options, timer_length):
+		self.options = options
+		self.solution = []
+		self.user_answer = []
+		self.display_history = []
+		self.current_display = None
+		self.display_timer = 0
+		self.display_timer_length = timer_length
+		self.score = 0
+		self.current_state = self.init
+
+	def update(self):
+		self.current_state()
+
+	def init(self):
+		self.solution = []
+		self.user_answer = []
+		self.display_history = []
+		self.score = 0
+		self.add_solution()
+		self.current_state = self.display_solution
+
+	def idle(self):
+		pass
+
+	def comp_turn(self):
+		self.display_solution()
+
+	def player_turn(self):
+		print('Waiting!')
+
+	def add_solution(self):
+		index = randint(0, len(self.options)-1)
+		self.solution.append(self.options[index])
+
+	def display_solution(self):
+		if not self.current_display:
+			current = len(self.display_history)
+			self.solution[current].ignite()
+			self.current_display = self.solution[current]
+		elif self.display_timer > self.display_timer_length:
+			if not self.current_display.get_state():
+				self.current_display = None
+				self.display_timer = 0
+				self.current_state = self.player_turn
+				self.solution = self.display_history.copy()
+				self.display_history = []
+		else:
+			self.display_timer += 1
 
 
 class RectButton:
@@ -176,7 +232,6 @@ class RectButton:
 		self.center_text()
 
 
-on_limit = 3
 RedButton = RectButton(screen, rect1, light_red, dark_red, red_note, on_limit=on_limit, player_obj=player)
 YellowButton = RectButton(screen, rect2, light_yellow, dark_yellow, yellow_note, on_limit=on_limit, player_obj=player)
 BlueButton = RectButton(screen, rect3, light_blue, dark_blue, blue_note, on_limit=on_limit, player_obj=player)
@@ -184,21 +239,34 @@ GreenButton = RectButton(screen, rect4, light_green, dark_green, green_note, on_
 NewGameButton = RectButton(screen, rectng, light_grey, dark_grey, on_limit=on_limit, text='NEW GAME')
 
 game_buttons = [RedButton, YellowButton, BlueButton, GreenButton, NewGameButton]
-
+current_game = None
 
 # ---------------------------------------------------------------------------------------
 # Game Methods
 # ---------------------------------------------------------------------------------------
 def reset():
-	global score_display
+	global score_display, current_game
 	for button in game_buttons:
 		button.set_to_base()
 	score_display = smallText.render('0', True, black)
+	current_game = GameLogic(game_buttons[:-1], on_limit+300)
 
 
 def increment_score():
 	global score_display
 	score_display = smallText.render(str(len(solution)), True, black)
+
+
+def show_solution():
+	global solution, display_history
+	try:
+		next_item = solution.pop(0)
+		display_history.append(next_item)
+		game_buttons[next_item].ignite()
+	except IndexError:
+		return True
+	else:
+		return False
 
 
 # ---------------------------------------------------------------------------------------
@@ -237,7 +305,6 @@ def refresh_gui():
 
 
 def main():
-	global current_state
 	winExit = False
 	clock = pygame.time.Clock()
 
@@ -245,9 +312,11 @@ def main():
 	pygame.event.set_allowed(None)
 	pygame.event.set_allowed([pygame.MOUSEBUTTONDOWN, pygame.QUIT])
 
+	display_counter = 0
+
 	while not winExit:
 		# Limits while loop to a max of 10 times per second
-		clock.tick(10)
+		clock.tick(clock_ticks)
 		refresh_gui()
 
 		# Event handler
@@ -256,6 +325,10 @@ def main():
 				winExit = True
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				handle_click(event)
+
+		# Game logic
+		if current_game:
+			current_game.update()
 
 		# draw_grid()
 		pygame.display.update()
