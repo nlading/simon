@@ -2,19 +2,6 @@ import pygame
 import pygame.midi
 from queue import Queue
 from random import randint
-from time import sleep
-
-# Backend pre-initialization
-HighScoreFileName = "score.txt"
-try:
-	openfile = open(HighScoreFileName, 'r')
-	high_score = openfile.read()
-	openfile.close()
-except FileNotFoundError:
-	high_score = []
-	f = open(HighScoreFileName, 'w')
-	f.write('0')
-	f.close()
 
 # Initialize all needed pygame modules
 pygame.init()
@@ -101,6 +88,10 @@ class GameLogic:
 		self.display_timer_length = timer_length
 		self.score = 0
 		self.current_state = self.idle
+		self.message = ''
+
+	def get_score(self):
+		return self.score
 
 	def new_game(self):
 		self.current_state = self.init
@@ -108,11 +99,15 @@ class GameLogic:
 	def update(self):
 		self.current_state()
 
+	def get_message(self):
+		return self.message
+
 	def init(self):
 		self.solution = []
 		self.user_answer = []
 		self.display_history = []
 		self.score = 0
+		self.message = ''
 		self.add_solution()
 
 	def idle(self):
@@ -129,6 +124,7 @@ class GameLogic:
 				self.display_timer = 0
 				self.display_history = []
 				self.current_state = self.round_over
+				self.score += 1
 
 	def round_over(self):
 		round_pause = 8
@@ -164,8 +160,29 @@ class GameLogic:
 			self.display_history = []
 
 	def game_over(self):
-		print("Game Over!")
+		self.check_high_score()
 		self.current_state = self.idle
+
+	def check_high_score(self):
+		"""
+		Checks to see if current score is the new high score. If so, overwrites existing score document.
+		:return:
+		"""
+		HighScoreFileName = "score.txt"
+		try:
+			openfile = open(HighScoreFileName, 'r')
+			high_score = openfile.read()
+			openfile.close()
+		except FileNotFoundError:
+			high_score = []
+			f = open(HighScoreFileName, 'w')
+			f.write('0')
+			f.close()
+		if str(self.score) > str(high_score):
+			self.message = "New High Score!!"
+			openfile = open(HighScoreFileName, 'w')
+			openfile.write(str(self.score))
+			openfile.close()
 
 
 class RectButton:
@@ -279,6 +296,12 @@ def reset():
 	current_game.new_game()
 
 
+def update_score():
+	global score_display
+	score = current_game.get_score()
+	score_display = smallText.render(str(score), True, black)
+
+
 # ---------------------------------------------------------------------------------------
 # Begin GUI
 # ---------------------------------------------------------------------------------------
@@ -308,11 +331,14 @@ def refresh_gui():
 	:return: None
 	"""
 	screen.fill(white)
+	update_score()
 	for button in game_buttons:
 		button.update()
 	screen.blit(title, (width_unit * 5, height_unit * 1))
 	screen.blit(score_label, (width_unit * 12, height_unit * 9.75))
 	screen.blit(score_display, (width_unit * 15, height_unit * 9.75))
+	msg_display = smallText.render(current_game.get_message(), True, black)
+	screen.blit(msg_display, (width_unit * 12, height_unit * 10.75))
 
 
 def main():
