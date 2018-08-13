@@ -29,7 +29,7 @@ min_width = 660
 min_height = 390
 info = pygame.display.Info()
 win_width = int(info.current_w * 0.4)
-win_height = (13 / 22) * win_width
+win_height = int((13 / 22) * win_width)
 
 # Check to verify window is equal to or greater in size than the mins
 if win_height < min_height or win_width < min_height:
