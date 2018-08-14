@@ -67,8 +67,6 @@ score_display = smallText.render('0', True, black)
 pygame.midi.init()
 player = pygame.midi.Output(0)
 player.set_instrument(87)  # 87 = Lead 7 (fifths)
-notes_on = {}
-tone_length = 2
 
 red_note = 55
 yellow_note = 60
@@ -78,56 +76,79 @@ green_note = 70
 
 class GameLogic:
 	def __init__(self, options, timer_length):
+		"""
+		Manages all behind-the-scenes game mechanics.
+		:param options: The possible actions that can be included in the solution.
+		:param timer_length: The length of time a game element should remain in an active state
+		"""
 		self.options = options
-		self.solution = []
-		self.user_answer = []
-		self.display_history = []
-		self.user_input_q = Queue()
-		self.current_display = None
-		self.display_timer = 0
+		self.solution = []              # The current correct sequence of actions to be repeated
+		self.display_history = []       # Tracks the actions that have been presented or guessed
+		self.user_input_q = Queue()     # Allows for sequential tracking of button presses from outside the class
+		self.current_display = None     # Tracks which element is currently active
+		self.display_timer = 0          # The amount of time an element has been active
 		self.display_timer_length = timer_length
 		self.score = 0
 		self.current_state = self.idle
-		self.message = ''
+		self.message = ''               # Messages to present to the user beneath the score
 
 	def get_score(self):
 		return self.score
 
-	def new_game(self):
-		self.current_state = self.init
-
 	def update(self):
+		"""
+		Processes the current state method set in self.current_state.
+		:return:
+		"""
 		self.current_state()
 
 	def get_message(self):
 		return self.message
 
-	def init(self):
+	def new_game(self):
+		"""
+		Restarts the game. Clears all current status variables.
+		:return:
+		"""
 		self.solution = []
-		self.user_answer = []
 		self.display_history = []
 		self.score = 0
 		self.message = ''
 		self.add_solution()
 
 	def idle(self):
+		"""
+		A hold state for when the game is waiting on user input or has no need to update
+		:return:
+		"""
 		pass
 
 	def player_turn(self):
+		"""
+		Processes the player's input. 3 states.
+		:return:
+		"""
 		if not self.user_input_q.empty():
 			check = self.user_input_q.get()
 			if check == self.solution[len(self.display_history)]:
+				# State 1: User has guessed correctly but has not guessed the entire sequence
 				self.display_history.append(check)
 			else:
+				# State 2: Player has guessed incorrectly. Game over.
 				self.game_over()
 			if len(self.display_history) == len(self.solution):
+				# State 3: Player has guessed the entire sequence correctly. Round over. Computer's turn.
 				self.display_timer = 0
 				self.display_history = []
 				self.current_state = self.round_over
 				self.score += 1
 
 	def round_over(self):
-		round_pause = 8
+		"""
+		Pauses the game for 8/10s of a second, then continues.
+		:return:
+		"""
+		round_pause = 8 / clock_ticks
 		if self.display_timer >= round_pause:
 			self.display_timer = 0
 			self.current_state = self.add_solution
@@ -135,14 +156,27 @@ class GameLogic:
 			self.display_timer += 1
 
 	def user_input(self, obj):
+		"""
+		External use method. Allows the GUI to communicate with GameLogic while letting the class process passed info.
+		:param obj: The object that the game must process
+		:return:
+		"""
 		self.user_input_q.put(obj)
 
 	def add_solution(self):
+		"""
+		Adds a single action to self.solution chosen at random from self.options
+		:return:
+		"""
 		index = randint(0, len(self.options)-1)
 		self.solution.append(self.options[index])
 		self.current_state = self.display_solution
 
 	def display_solution(self):
+		"""
+		Presents the solution to the player. Self.display_timer ensures only one presented object is active at a time.
+		:return:
+		"""
 		if not self.current_display:
 			current = len(self.display_history)
 			self.solution[current].ignite()
@@ -160,6 +194,10 @@ class GameLogic:
 			self.display_history = []
 
 	def game_over(self):
+		"""
+		Player guessed incorrectly. Check if the player earned a high score and process, then wait for new game command.
+		:return:
+		"""
 		self.check_high_score()
 		self.current_state = self.idle
 
