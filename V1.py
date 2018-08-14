@@ -118,7 +118,7 @@ class GameLogic:
 
 	def idle(self):
 		"""
-		A hold state for when the game is waiting on user input or has no need to update
+		A hold state when waiting to begin a new game. The GUI can remain interactive without performing game actions
 		:return:
 		"""
 		pass
