@@ -233,6 +233,7 @@ class RectButton:
 		tone=None,
 		on_limit=10,
 		text='',
+		text_color=(0,0,0),
 		font=pygame.font.Font("freesansbold.ttf", 20),
 		player_obj=None,
 		state=False,
@@ -246,6 +247,7 @@ class RectButton:
 		:param tone: Integer corresponding to midi value to be played when activated
 		:param on_limit: Integer length of time to remain active defined as number of surface refreshes
 		:param text: String to be centered on the button. Does not check for wrap or overhang.
+		:param text_color: The color of the button text
 		:param font: Font used to render text
 		:param player_obj: Midi object to produce tone with
 		:param state: Boolean state of the button. True = Active, False = inactive.
@@ -259,7 +261,7 @@ class RectButton:
 		self.on_limit = on_limit
 		self.text = text
 		self.font = font
-		self.text_color = (0, 0, 0)
+		self.text_color = text_color
 		self.player = player_obj
 		self.state = state
 		self.base_state = state         # Does not change
@@ -369,17 +371,22 @@ current_game = GameLogic(game_buttons[:-1], on_limit+5)
 # Game Methods
 # ---------------------------------------------------------------------------------------
 def reset():
-	global score_display, current_game
+	"""
+	Resets GUI elements to their base states, sets score text to 0, and instructs GameLogic to begin a new game
+	:return:
+	"""
+	current_game.new_game()
 	for button in game_buttons:
 		button.set_to_base()
-	score_display = smallText.render('0', True, black)
-	current_game.new_game()
 
 
 def update_score():
-	global score_display
+	"""
+	Updates the score text displayed in the GUI
+	:return:
+	"""
 	score = current_game.get_score()
-	score_display = smallText.render(str(score), True, black)
+	return smallText.render(str(score), True, black)
 
 
 # ---------------------------------------------------------------------------------------
@@ -397,6 +404,11 @@ def draw_grid():
 
 
 def handle_click(event):
+	"""
+	Determines if any button has been clicked. If so, perform the proper operation.
+	:param event: The click event created by pygame containing the location of the player's mouse click
+	:return:
+	"""
 	for button in game_buttons:
 		if button.check_clicked(event) and button.get_text() == 'NEW GAME':
 			reset()
@@ -411,12 +423,12 @@ def refresh_gui():
 	:return: None
 	"""
 	screen.fill(white)
-	update_score()
+	score_text = update_score()
 	for button in game_buttons:
 		button.update()
 	screen.blit(title, (width_unit * 5, height_unit * 1))
 	screen.blit(score_label, (width_unit * 12, height_unit * 9.75))
-	screen.blit(score_display, (width_unit * 15, height_unit * 9.75))
+	screen.blit(score_text, (width_unit * 15, height_unit * 9.75))
 	msg_display = smallText.render(current_game.get_message(), True, black)
 	screen.blit(msg_display, (width_unit * 12, height_unit * 10.75))
 
@@ -428,8 +440,6 @@ def main():
 	# Define allowed interactions - Allows only mouse down actions, and closing the window
 	pygame.event.set_allowed(None)
 	pygame.event.set_allowed([pygame.MOUSEBUTTONDOWN, pygame.QUIT])
-
-	display_counter = 0
 
 	while not winExit:
 		# Limits while loop to a max of 10 times per second
